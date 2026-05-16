@@ -9,7 +9,9 @@ import { revalidatePath } from "next/cache";
 
 export async function getAdmin() {
   const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  if (!userId) {
+    return { authorized: false, reason: "unauthenticated" };
+  }
 
   const user = await db.user.findUnique({
     where: { clerkUserId: userId },
@@ -71,7 +73,7 @@ export async function getAdminTestDrives({ search = "", status = "" }) {
     }
 
     // Get bookings
-    const bookings = await db.testDriveBooking.findMany({
+    const bookings = await db.testDrivesBooking.findMany({
       where,
       include: {
         car: true,
@@ -135,7 +137,7 @@ export async function updateTestDriveStatus(bookingId, newStatus) {
     }
 
     // Get the booking
-    const booking = await db.testDriveBooking.findUnique({
+    const booking = await db.testDrivesBooking.findUnique({
       where: { id: bookingId },
     });
 
@@ -159,7 +161,7 @@ export async function updateTestDriveStatus(bookingId, newStatus) {
     }
 
     // Update status
-    await db.testDriveBooking.update({
+    await db.testDrivesBooking.update({
       where: { id: bookingId },
       data: { status: newStatus },
     });
@@ -206,7 +208,7 @@ export async function getDashboardData() {
       }),
 
       // Get all test drives with minimal fields
-      db.testDriveBooking.findMany({
+      db.testDrivesBooking.findMany({
         select: {
           id: true,
           status: true,

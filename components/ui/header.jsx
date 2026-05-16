@@ -38,17 +38,17 @@ const isAdmin = user?.role==="ADMIN";
                     </Button>
                      </Link>
                      {isAdmin ? (
-                        <Link href="/reservations">
-                    <Button variant="outline">
-                        <CarFront size={18}/>
-                        <span className="hidden md:inline">My Reservations</span>
-                    </Button>
-                    </Link>
-                     ) : (
                      <Link href="/admin">
                     <Button variant="outline">
                         <Layout size={18}/>
                         <span className="hidden md:inline">Admin Portal</span>
+                    </Button>
+                    </Link>
+                     ) : (
+                        <Link href="/reservations">
+                    <Button variant="outline">
+                        <CarFront size={18}/>
+                        <span className="hidden md:inline">My Reservations</span>
                     </Button>
                     </Link>
                         )}

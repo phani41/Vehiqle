@@ -4,6 +4,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { Calendar, Car, Cog, LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 // Navigation items
 const routes = [

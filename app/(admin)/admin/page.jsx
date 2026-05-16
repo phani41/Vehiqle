@@ -1,5 +1,5 @@
 import { getDashboardData } from "@/actions/admin";
-import { Dashboard } from "./admin/_components/dashboard";
+import { Dashboard } from "./_components/dashboard";
 
 export const metadata = {
   title: "Dashboard | Vehiql Admin",
@@ -7,7 +7,6 @@ export const metadata = {
 };
 
 export default async function AdminDashboardPage() {
-  // Fetch dashboard data
   const dashboardData = await getDashboardData();
 
   return (

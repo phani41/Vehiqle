@@ -1,10 +1,10 @@
 import { getCarFilters } from "@/actions/car-listing";
-import CarFilters from "./_components/car-filters";
-import CarListings from "./_components/car-listing";
+import { CarFilters } from "./_components/car-filters";
+import { CarListings } from "./_components/car-listing";
 
 
 export const metadata = {
-  title: "Cars | Vehiql",
+  title: "Cars | Vehiqle",
   description: "Browse and search for your dream car",
 };
 

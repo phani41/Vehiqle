@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger
 import { Button } from "@/components/ui/button";
 import { Filter, Sliders, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import CarFilterControls from "./filter-controls";
+import { CarFilterControls } from "./filter-controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const CarFilters = ({ filters }) => {

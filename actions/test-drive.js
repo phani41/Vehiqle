@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
-import { serializeCarData } from "@/lib/helpers";
+import { serializeCarData } from "@/lib/helper";
 
 /**
  * Books a test drive for a car
@@ -35,7 +35,7 @@ export async function bookTestDrive({
     if (!car) throw new Error("Car not available for test drive");
 
     // Check if slot is already booked
-    const existingBooking = await db.testDriveBooking.findFirst({
+    const existingBooking = await db.testDrivesBooking.findFirst({
       where: {
         carId,
         bookingDate: new Date(bookingDate),
@@ -51,7 +51,7 @@ export async function bookTestDrive({
     }
 
     // Create the booking
-    const booking = await db.testDriveBooking.create({
+    const booking = await db.testDrivesBooking.create({
       data: {
         carId,
         userId: user.id,
@@ -106,7 +106,7 @@ export async function getUserTestDrives() {
     }
 
     // Get user's test drive bookings
-    const bookings = await db.testDriveBooking.findMany({
+    const bookings = await db.testDrivesBooking.findMany({
       where: { userId: user.id },
       include: {
         car: true,
@@ -167,7 +167,7 @@ export async function cancelTestDrive(bookingId) {
     }
 
     // Get the booking
-    const booking = await db.testDriveBooking.findUnique({
+    const booking = await db.testDrivesBooking.findUnique({
       where: { id: bookingId },
     });
 
@@ -202,7 +202,7 @@ export async function cancelTestDrive(bookingId) {
     }
 
     // Update the booking status
-    await db.testDriveBooking.update({
+    await db.testDrivesBooking.update({
       where: { id: bookingId },
       data: { status: "CANCELLED" },
     });

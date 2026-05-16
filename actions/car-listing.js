@@ -5,10 +5,27 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 
+
 /**
  * Get simplified filters for the car marketplace
  */
 export async function getCarFilters() {
+  if (!process.env.DATABASE_URL) {
+    return {
+      success: true,
+      data: {
+        makes: [],
+        bodyTypes: [],
+        fuelTypes: [],
+        transmissions: [],
+        priceRange: {
+          min: 0,
+          max: 100000,
+        },
+      },
+    };
+  }
+
   try {
     // Get unique makes
     const makes = await db.car.findMany({
@@ -86,6 +103,19 @@ export async function getCars({
   page = 1,
   limit = 6,
 }) {
+  if (!process.env.DATABASE_URL) {
+    return {
+      success: true,
+      data: [],
+      pagination: {
+        total: 0,
+        page,
+        limit,
+        pages: 0,
+      },
+    };
+  }
+
   try {
     // Get current user if authenticated
     const { userId } = await auth();
@@ -263,6 +293,13 @@ export async function toggleSavedCar(carId) {
  * Get car details by ID
  */
 export async function getCarById(carId) {
+  if (!process.env.DATABASE_URL) {
+    return {
+      success: false,
+      error: "Database is not configured",
+    };
+  }
+
   try {
     // Get current user if authenticated
     const { userId } = await auth();
@@ -302,7 +339,7 @@ export async function getCarById(carId) {
     }
 
     // Check if user has already booked a test drive for this car
-    const existingTestDrive = await db.testDriveBooking.findFirst({
+    const existingTestDrive = await db.testDrivesBooking.findFirst({
       where: {
         carId,
         userId: dbUser.id,
@@ -333,7 +370,7 @@ export async function getCarById(carId) {
     return {
       success: true,
       data: {
-        ...serializeCarData(car, isWishlisted),
+        ...serializedCarData(car, isWishlisted),
         testDriveInfo: {
           userTestDrive,
           dealership: dealership
@@ -360,6 +397,13 @@ export async function getCarById(carId) {
  * Get user's saved cars
  */
 export async function getSavedCars() {
+  if (!process.env.DATABASE_URL) {
+    return {
+      success: false,
+      error: "Database is not configured",
+    };
+  }
+
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -391,7 +435,7 @@ export async function getSavedCars() {
     });
 
     // Extract and format car data
-    const cars = savedCars.map((saved) => serializeCarData(saved.car));
+    const cars = savedCars.map((saved) => serializedCarData(saved.car));
 
     return {
       success: true,

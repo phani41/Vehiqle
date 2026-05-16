@@ -1,4 +1,4 @@
-import CarCard from "@/components/car-card";
+import { CarCard } from "@/components/car-card";
 import { Button } from "@/components/ui/button";
 import { carMakes, bodyTypes, faqItems } from "@/lib/data";
 import { Calendar, Car, ChevronRight, Shield } from "lucide-react";

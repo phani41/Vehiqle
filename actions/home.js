@@ -18,6 +18,10 @@ function serializeCarData(car) {
  * Get featured cars for the homepage
  */
 export async function getFeaturedCars(limit = 3) {
+  if (!process.env.DATABASE_URL) {
+    return [];
+  }
+
   try {
     const cars = await db.car.findMany({
       where: {
@@ -30,7 +34,8 @@ export async function getFeaturedCars(limit = 3) {
 
     return cars.map(serializeCarData);
   } catch (error) {
-    throw new Error("Error fetching featured cars:" + error.message);
+    console.error("Error fetching featured cars:", error.message);
+    return [];
   }
 }
 

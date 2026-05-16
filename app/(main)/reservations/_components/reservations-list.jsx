@@ -21,16 +21,16 @@ export function ReservationsList({ initialData }) {
   };
 
   // Group bookings by status
-  const upcomingBookings = initialData?.data?.filter((booking) =>
+  const upcomingBookings = (initialData?.data || []).filter((booking) =>
     ["PENDING", "CONFIRMED"].includes(booking.status)
   );
 
-  const pastBookings = initialData?.data?.filter((booking) =>
+  const pastBookings = (initialData?.data || []).filter((booking) =>
     ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(booking.status)
   );
 
   // No reservations
-  if (initialData?.data?.length === 0) {
+  if (!initialData?.data || initialData.data.length === 0) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center text-center p-8 border rounded-lg bg-gray-50">
         <div className="bg-gray-100 p-4 rounded-full mb-4">
