@@ -1,15 +1,28 @@
 /** @type {import('next').NextConfig} */
+// Dynamically allow the Supabase hostname configured in env so next/image
+// accepts uploaded object URLs without hardcoding the project subdomain.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+let SUPABASE_HOSTNAME = "";
+try {
+  SUPABASE_HOSTNAME = SUPABASE_URL ? new URL(SUPABASE_URL).hostname : "";
+} catch (e) {
+  SUPABASE_HOSTNAME = "";
+}
+
 const nextConfig = { 
     experimental:{
         serverComponentsHmrCache:false,
     },
     images: {
-        remotePatterns:[
-            {
-                protocol:"https",
-                hostname:"https://hsukaookqpjkihnjtvcx.supabase.co",
-            },
-        ],
+        remotePatterns: SUPABASE_HOSTNAME
+            ? [
+                {
+                    protocol: "https",
+                    hostname: SUPABASE_HOSTNAME,
+                    pathname: "/**",
+                },
+            ]
+            : [],
     },
     async headers() {
         return [

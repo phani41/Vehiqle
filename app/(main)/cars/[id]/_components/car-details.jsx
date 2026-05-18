@@ -4,7 +4,7 @@ import { toggleSavedCar } from "@/actions/car-listing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import useFetch from "@/hooks/use-fetch";
 import { formatCurrency } from "@/lib/helper";
 import { format } from "date-fns";
@@ -103,7 +103,8 @@ export function CarDetails({ car, testDriveInfo }) {
                 src={car.images[currentImageIndex]}
                 alt={`${car.year} ${car.make} ${car.model}`}
                 fill
-                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 60vw"
+                className="object-cover object-center"
                 priority
               />
             ) : (
@@ -132,6 +133,7 @@ export function CarDetails({ car, testDriveInfo }) {
                       index + 1
                     }`}
                     fill
+                    sizes="96px"
                     className="object-cover"
                   />
                 </div>

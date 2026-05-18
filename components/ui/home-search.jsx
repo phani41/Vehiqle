@@ -63,28 +63,40 @@ export function HomeSearch() {
       setIsUploading(true);
       setSearchImage(file);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
+      try {
+        // Use object URL for faster previews and broader format support (webp, avif, etc.)
+        const url = URL.createObjectURL(file);
+        setImagePreview(url);
         setIsUploading(false);
         toast.success("Image uploaded successfully");
-      };
-      reader.onerror = () => {
+      } catch (err) {
         setIsUploading(false);
-        toast.error("Failed to read the image");
-      };
-      reader.readAsDataURL(file);
+        console.error("Preview generation failed", err);
+        toast.error("Failed to create image preview");
+      }
     }
   };
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } =
     useDropzone({
       onDrop,
+      // Accept all image types (including webp/avif) to avoid rejecting common uploads
       accept: {
-        "image/*": [".jpeg", ".jpg", ".png"],
+        "image/*": [],
       },
       maxFiles: 1,
     });
+
+  // Revoke object URL when component unmounts or imagePreview changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith && imagePreview.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(imagePreview);
+        } catch (e) {}
+      }
+    };
+  }, [imagePreview]);
 
   // Handle text search submissions
   const handleTextSearch = (e) => {
@@ -111,7 +123,8 @@ export function HomeSearch() {
 
   return (
     <div>
-      <form onSubmit={handleTextSearch}>
+      {/* Desktop / large screens: original pill input with overlay icons */}
+      <form onSubmit={handleTextSearch} className="hidden md:block">
         <div className="relative flex items-center">
           <Search className="absolute left-3 w-5 h-5" />
           <Input
@@ -122,7 +135,6 @@ export function HomeSearch() {
             className="pl-10 pr-12 py-6 w-full rounded-full border-gray-300 bg-white/95 backdrop-blur-sm"
           />
 
-          {/* Image Search Button */}
           <div className="absolute right-[100px]">
             <Camera
               size={35}
@@ -134,6 +146,34 @@ export function HomeSearch() {
               }}
             />
           </div>
+
+          <Button type="submit" className="absolute right-2 rounded-full">
+            Search
+          </Button>
+        </div>
+      </form>
+
+      {/* Mobile / small screens: camera inside pill, Search button overlaid */}
+      <form onSubmit={handleTextSearch} className="block md:hidden">
+        <div className="relative flex items-center w-full">
+          <Search className="absolute left-3 w-5 h-5 text-gray-500" />
+
+          <Input
+            type="text"
+            placeholder="Enter make, model, or use our AI Image Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-24 py-3 rounded-full w-full border-gray-300 bg-white/95 backdrop-blur-sm"
+          />
+
+          <button
+            type="button"
+            onClick={() => setIsImageSearchActive(!isImageSearchActive)}
+            className={`absolute right-14 top-1/2 -translate-y-1/2 flex items-center justify-center p-1.5 rounded-xl ${isImageSearchActive ? 'bg-black text-white' : 'bg-transparent text-gray-700'}`}
+            aria-label="Toggle image search"
+          >
+            <Camera size={18} />
+          </button>
 
           <Button type="submit" className="absolute right-2 rounded-full">
             Search
@@ -155,6 +195,9 @@ export function HomeSearch() {
                   <Button
                     variant="outline"
                     onClick={() => {
+                      if (imagePreview && imagePreview.startsWith && imagePreview.startsWith("blob:")) {
+                        try { URL.revokeObjectURL(imagePreview); } catch (e) {}
+                      }
                       setSearchImage(null);
                       setImagePreview("");
                       toast.info("Image removed");

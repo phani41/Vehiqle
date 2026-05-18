@@ -61,12 +61,13 @@ export const CarCard = ({ car }) => {
     <Card className="overflow-hidden hover:shadow-lg transition group">
       <div className="relative h-48">
         {car.images && car.images.length > 0 ? (
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full overflow-hidden">
             <Image
               src={car.images[0]}
               alt={`${car.make} ${car.model}`}
               fill
-              className="object-cover group-hover:scale-105 transition duration-300"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-contain object-center group-hover:scale-105 transition duration-300 bg-white"
             />
           </div>
         ) : (

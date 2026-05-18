@@ -20,7 +20,7 @@ export default async function ReservationsPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-6xl mb-6 gradient-title">Your Reservations</h1>
+      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-6 gradient-title">Your Reservations</h1>
       <ReservationsList initialData={reservationsResult} />
     </div>
   );

@@ -607,13 +607,13 @@ export const AddCarForm = () => {
                       </h3>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {uploadedImages.map((image, index) => (
-                          <div key={index} className="relative group">
+                          <div key={index} className="relative group h-28 overflow-hidden rounded-md">
                             <Image
                               src={image}
                               alt={`Car image ${index + 1}`}
-                              height={50}
-                              width={50}
-                              className="h-28 w-full object-cover rounded-md"
+                              fill
+                              sizes="(max-width: 640px) 100vw, 200px"
+                              className="object-contain object-center rounded-md bg-white"
                               priority
                             />
                             <Button

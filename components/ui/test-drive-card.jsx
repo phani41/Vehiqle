@@ -70,12 +70,13 @@ export function TestDriveCard({
           {/* Car Image - Left */}
           <div className="sm:w-1/4 relative h-40 sm:h-auto">
             {booking.car.images && booking.car.images.length > 0 ? (
-              <div className="relative w-full h-full">
+              <div className="relative w-full h-full overflow-hidden">
                 <Image
                   src={booking.car.images[0]}
                   alt={`${booking.car.make} ${booking.car.model}`}
                   fill
-                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-contain object-center bg-white"
                 />
               </div>
             ) : (

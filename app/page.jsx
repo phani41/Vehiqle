@@ -70,8 +70,9 @@ export default async function Home() {
                   <Image
                     src={make.image}
                     alt={make.name}
-                    fill
-                    style={{ objectFit: "contain" }}
+                      fill
+                      sizes="64px"
+                      style={{ objectFit: "contain" }}
                   />
                 </div>
                 <h3 className="font-medium">{make.name}</h3>
@@ -141,8 +142,9 @@ export default async function Home() {
                   <Image
                     src={type.image}
                     alt={type.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition duration-300"
+                      fill
+                      sizes="200px"
+                      className="object-cover group-hover:scale-105 transition duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-lg flex items-end">
                     <h3 className="text-white text-xl font-bold pl-4 pb-2">{type.name}</h3>

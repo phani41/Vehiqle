@@ -8,6 +8,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 function serializeCarData(car) {
   return {
     ...car,
+    images: car.image || [],
     price: car.price ? parseFloat(car.price.toString()) : 0,
     createdAt: car.createdAt?.toISOString(),
     updatedAt: car.updatedAt?.toISOString(),
@@ -78,12 +79,17 @@ export async function processImageSearch(file) {
 
     // Check if API key is available
     if (!process.env.GEMINI_API_KEY) {
-      throw new Error("Gemini API key is not configured");
+      return {
+        success: false,
+        error: "Gemini API key is not configured",
+      };
     }
 
     // Initialize Gemini API
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use a supported Gemini model; gemini-1.5-flash is not available for v1beta in this environment.
+    // Match other usage in the repo which uses "gemini-2.0-flash".
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Convert image file to base64
     const base64Image = await fileToBase64(file);
@@ -139,6 +145,15 @@ export async function processImageSearch(file) {
       };
     }
   } catch (error) {
-    throw new Error("AI Search error:" + error.message);
+    const msg = error?.message || String(error);
+    // Try to extract a retry delay if present in the message
+    const retryMatch = msg.match(/Please retry in (\d+\.?\d*)s/);
+    const retryAfter = retryMatch ? Number(retryMatch[1]) : null;
+
+    return {
+      success: false,
+      error: `AI Search error: ${msg}`,
+      retryAfter,
+    };
   }
 }

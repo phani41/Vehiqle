@@ -174,7 +174,7 @@ const CarsList = () => {
                               alt={`${car.make} ${car.model}`}
                               height={40}
                               width={40}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain object-center bg-white"
                               priority
                             />
                             ) : (
