@@ -12,7 +12,8 @@ function EmiCalculator({ price = 1000 }) {
   const [error, setError] = useState("");
 
   const handleLoanAmountChange = (value) => {
-    const newLoanAmount = Math.min(Math.max(value, 1000), 150000);
+    const safeValue = isNaN(value) ? 0 : value;
+    const newLoanAmount = Math.min(Math.max(safeValue, 1000), 150000);
     setLoanAmount(newLoanAmount);
     const newDownPayment = (downPaymentPercent / 100) * newLoanAmount;
     setDownPayment(newDownPayment);
@@ -20,14 +21,16 @@ function EmiCalculator({ price = 1000 }) {
   };
 
   const handleDownPaymentChange = (value) => {
-    const newDownPayment = Math.min(Math.max(value, 0), loanAmount);
+    const safeValue = isNaN(value) ? 0 : value;
+    const newDownPayment = Math.min(Math.max(safeValue, 0), loanAmount);
     setDownPayment(newDownPayment);
-    setDownPaymentPercent((newDownPayment / loanAmount) * 100);
+    setDownPaymentPercent(loanAmount > 0 ? (newDownPayment / loanAmount) * 100 : 0);
     calculateLoan(loanAmount, newDownPayment, interestRate, loanTenure);
   };
 
   const handleDownPaymentPercentChange = (percent) => {
-    const newPercent = Math.min(Math.max(percent, 0), 100);
+    const safePercent = isNaN(percent) ? 0 : percent;
+    const newPercent = Math.min(Math.max(safePercent, 0), 100);
     setDownPaymentPercent(newPercent);
     const newDownPayment = (newPercent / 100) * loanAmount;
     setDownPayment(newDownPayment);
@@ -35,13 +38,15 @@ function EmiCalculator({ price = 1000 }) {
   };
 
   const handleInterestRateChange = (value) => {
-    const newRate = Math.min(Math.max(value, 0.1), 25);
+    const safeRate = isNaN(value) ? 0.1 : value;
+    const newRate = Math.min(Math.max(safeRate, 0.1), 25);
     setInterestRate(newRate);
     calculateLoan(loanAmount, downPayment, newRate, loanTenure);
   };
 
   const handleLoanTenureChange = (value) => {
-    const newTenure = Math.min(Math.max(value, 1), 8);
+    const safeTenure = isNaN(value) ? 1 : value;
+    const newTenure = Math.min(Math.max(safeTenure, 1), 8);
     setLoanTenure(newTenure);
     calculateLoan(loanAmount, downPayment, interestRate, newTenure);
   };
@@ -165,7 +170,7 @@ function EmiCalculator({ price = 1000 }) {
                     onChange={(e) =>
                       handleInterestRateChange(parseFloat(e.target.value))
                     }
-                    className="w-full pr-8 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-gray-900 dark:focus:border-gray-400"
+                    className="w-full pl-3 pr-8 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-gray-900 dark:focus:border-gray-400"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <span className="text-gray-700 dark:text-gray-300">%</span>
@@ -197,7 +202,7 @@ function EmiCalculator({ price = 1000 }) {
                     onChange={(e) =>
                       handleLoanTenureChange(parseFloat(e.target.value))
                     }
-                    className="w-full pr-12 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-gray-900 dark:focus:border-gray-400"
+                    className="w-full pl-3 pr-12 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:border-gray-900 dark:focus:border-gray-400"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <span className="text-gray-700 dark:text-gray-300">

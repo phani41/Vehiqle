@@ -4,7 +4,7 @@
 import { getCars } from "@/actions/car-listing";
 import useFetch from "@/hooks/use-fetch";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import CarListingsLoading from "./car-listing-loading";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
@@ -13,11 +13,11 @@ import Link from "next/link";
 import { CarCard } from "@/components/car-card";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
-export function CarListings() {
+export function CarListings({ initialData }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [currentPage, setCurrentPage] = useState(1);
   const limit = 6;
+  const isFirstRender = useRef(true);
 
   // Extract filter values from searchParams
   const search = searchParams.get("search") || "";
@@ -33,8 +33,13 @@ export function CarListings() {
   // Use the useFetch hook
   const { loading, fn: fetchCars, data: result, error } = useFetch(getCars);
 
-  // Fetch cars when filters change
+  // Fetch cars when filters change (skip redundant initial fetch if server pre-rendered)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     fetchCars({
       search,
       make,
@@ -59,18 +64,12 @@ export function CarListings() {
     page,
   ]);
 
-  // Update URL when page changes
-  useEffect(() => {
-    if (currentPage !== page) {
-      const params = new URLSearchParams(searchParams);
-      params.set("page", currentPage.toString());
-      router.push(`?${params.toString()}`);
-    }
-  }, [currentPage, router, searchParams, page]);
+  // Active dataset: latest client fetch result or initial SSR data
+  const currentResult = result || initialData;
 
   // Handle pagination clicks
   const handlePageChange = (pageNum) => {
-    setCurrentPage(pageNum);
+    router.push(getPaginationUrl(pageNum));
   };
 
   // Generate pagination URL
@@ -81,12 +80,12 @@ export function CarListings() {
   };
 
   // Show loading state
-  if (loading && !result) {
+  if (loading && !currentResult) {
     return <CarListingsLoading />;
   }
 
   // Handle error
-  if (error || (result && !result.success)) {
+  if (error || (currentResult && !currentResult.success)) {
     return (
       <Alert variant="destructive">
         <Info className="h-4 w-4" />
@@ -99,11 +98,11 @@ export function CarListings() {
   }
 
   // If no results yet, return empty placeholder
-  if (!result || !result.data) {
+  if (!currentResult || !currentResult.data) {
     return null;
   }
 
-  const { data: cars, pagination } = result;
+  const { data: cars, pagination } = currentResult;
 
   // No results
   if (cars.length === 0) {

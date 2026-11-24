@@ -27,44 +27,39 @@ export async function getCarFilters() {
   }
 
   try {
-    // Get unique makes
-    const makes = await db.car.findMany({
-      where: { status: "AVAILABLE" },
-      select: { make: true },
-      distinct: ["make"],
-      orderBy: { make: "asc" },
-    });
-
-    // Get unique body types
-    const bodyTypes = await db.car.findMany({
-      where: { status: "AVAILABLE" },
-      select: { bodyType: true },
-      distinct: ["bodyType"],
-      orderBy: { bodyType: "asc" },
-    });
-
-    // Get unique fuel types
-    const fuelTypes = await db.car.findMany({
-      where: { status: "AVAILABLE" },
-      select: { fuelType: true },
-      distinct: ["fuelType"],
-      orderBy: { fuelType: "asc" },
-    });
-
-    // Get unique transmissions
-    const transmissions = await db.car.findMany({
-      where: { status: "AVAILABLE" },
-      select: { transmission: true },
-      distinct: ["transmission"],
-      orderBy: { transmission: "asc" },
-    });
-
-    // Get min and max prices using Prisma aggregations
-    const priceAggregations = await db.car.aggregate({
-      where: { status: "AVAILABLE" },
-      _min: { price: true },
-      _max: { price: true },
-    });
+    // Run all filter aggregation queries in parallel
+    const [makes, bodyTypes, fuelTypes, transmissions, priceAggregations] =
+      await Promise.all([
+        db.car.findMany({
+          where: { status: "AVAILABLE" },
+          select: { make: true },
+          distinct: ["make"],
+          orderBy: { make: "asc" },
+        }),
+        db.car.findMany({
+          where: { status: "AVAILABLE" },
+          select: { bodyType: true },
+          distinct: ["bodyType"],
+          orderBy: { bodyType: "asc" },
+        }),
+        db.car.findMany({
+          where: { status: "AVAILABLE" },
+          select: { fuelType: true },
+          distinct: ["fuelType"],
+          orderBy: { fuelType: "asc" },
+        }),
+        db.car.findMany({
+          where: { status: "AVAILABLE" },
+          select: { transmission: true },
+          distinct: ["transmission"],
+          orderBy: { transmission: "asc" },
+        }),
+        db.car.aggregate({
+          where: { status: "AVAILABLE" },
+          _min: { price: true },
+          _max: { price: true },
+        }),
+      ]);
 
     return {
       success: true,
@@ -173,27 +168,24 @@ export async function getCars({
         break;
     }
 
-    // Get total count for pagination
-    const totalCars = await db.car.count({ where });
+    // Execute count, cars query, and wishlisted query in parallel
+    const [totalCars, cars, savedCars] = await Promise.all([
+      db.car.count({ where }),
+      db.car.findMany({
+        where,
+        take: limit,
+        skip,
+        orderBy,
+      }),
+      dbUser
+        ? db.userSavedCar.findMany({
+            where: { userId: dbUser.id },
+            select: { carId: true },
+          })
+        : Promise.resolve([]),
+    ]);
 
-    // Execute the main query
-    const cars = await db.car.findMany({
-      where,
-      take: limit,
-      skip,
-      orderBy,
-    });
-
-    // If we have a user, check which cars are wishlisted
-    let wishlisted = new Set();
-    if (dbUser) {
-      const savedCars = await db.userSavedCar.findMany({
-        where: { userId: dbUser.id },
-        select: { carId: true },
-      });
-
-      wishlisted = new Set(savedCars.map((saved) => saved.carId));
-    }
+    const wishlisted = new Set(savedCars.map((saved) => saved.carId));
 
     // Serialize and check wishlist status
     const serializedCars = cars.map((car) =>
@@ -303,18 +295,23 @@ export async function getCarById(carId) {
   try {
     // Get current user if authenticated
     const { userId } = await auth();
-    let dbUser = null;
 
-    if (userId) {
-      dbUser = await db.user.findUnique({
-        where: { clerkUserId: userId },
-      });
-    }
-
-    // Get car details
-    const car = await db.car.findUnique({
-      where: { id: carId },
-    });
+    // Fetch car, dealership info, and user in parallel for speed
+    const [car, dealership, dbUser] = await Promise.all([
+      db.car.findUnique({
+        where: { id: carId },
+      }),
+      db.dealershipInfo.findFirst({
+        include: {
+          workingHours: true,
+        },
+      }),
+      userId
+        ? db.user.findUnique({
+            where: { clerkUserId: userId },
+          })
+        : Promise.resolve(null),
+    ]);
 
     if (!car) {
       return {
@@ -323,49 +320,42 @@ export async function getCarById(carId) {
       };
     }
 
-    // Check if car is wishlisted by user
+    // Check wishlist and test drive in parallel if user is authenticated
     let isWishlisted = false;
-    if (dbUser) {
-      const savedCar = await db.userSavedCar.findUnique({
-        where: {
-          userId_carId: {
-            userId: dbUser.id,
-            carId,
-          },
-        },
-      });
-
-      isWishlisted = !!savedCar;
-    }
-
-    // Check if user has already booked a test drive for this car
-    const existingTestDrive = await db.testDrivesBooking.findFirst({
-      where: {
-        carId,
-        userId: dbUser.id,
-        status: { in: ["PENDING", "CONFIRMED", "COMPLETED"] },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
     let userTestDrive = null;
 
-    if (existingTestDrive) {
-      userTestDrive = {
-        id: existingTestDrive.id,
-        status: existingTestDrive.status,
-        bookingDate: existingTestDrive.bookingDate.toISOString(),
-      };
-    }
+    if (dbUser) {
+      const [savedCar, existingTestDrive] = await Promise.all([
+        db.userSavedCar.findUnique({
+          where: {
+            userId_carId: {
+              userId: dbUser.id,
+              carId,
+            },
+          },
+        }),
+        db.testDrivesBooking.findFirst({
+          where: {
+            carId,
+            userId: dbUser.id,
+            status: { in: ["PENDING", "CONFIRMED", "COMPLETED"] },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        }),
+      ]);
 
-    // Get dealership info for test drive availability
-    const dealership = await db.dealershipInfo.findFirst({
-      include: {
-        workingHours: true,
-      },
-    });
+      isWishlisted = !!savedCar;
+
+      if (existingTestDrive) {
+        userTestDrive = {
+          id: existingTestDrive.id,
+          status: existingTestDrive.status,
+          bookingDate: existingTestDrive.bookingDate.toISOString(),
+        };
+      }
+    }
 
     return {
       success: true,

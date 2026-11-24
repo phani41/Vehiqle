@@ -178,8 +178,8 @@ export async function cancelTestDrive(bookingId) {
       };
     }
 
-    // Check if user owns this booking
-    if (booking.userId !== user.id || user.role !== "ADMIN") {
+    // Check if user owns this booking or is an admin
+    if (booking.userId !== user.id && user.role !== "ADMIN") {
       return {
         success: false,
         error: "Unauthorized to cancel this booking",

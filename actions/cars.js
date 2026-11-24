@@ -31,7 +31,7 @@ export async function processCarImageWithAI(file) {
                 fuelType: "",
                 transmission: "",
                 description: "",
-                conidence: 0.0,
+                confidence: 0.0,
             },
         };
     }
@@ -54,7 +54,7 @@ export async function processCarImageWithAI(file) {
                     fuelType: "",
                     transmission: "",
                     description: "",
-                    conidence: 0.0,
+                    confidence: 0.0,
                 },
             };
         }
@@ -96,7 +96,7 @@ export async function processCarImageWithAI(file) {
                                 "fuelType": "",
                                 "transmission": "",
                                 "description": "",
-                                "conidence": 0.0
+                                "confidence": 0.0
                         }
                              For confidence, provide a value between 0 and 1 representing how confident you are in your overall identification.
                              Only respond with the JSON objects,nothing else.
@@ -116,10 +116,14 @@ export async function processCarImageWithAI(file) {
             text = String(result);
         }
 
-        const cleanedText = text.replace(/``(?:json)?\n?/g, "").trim();
+        const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
 
         try {
             const carDetails = JSON.parse(cleanedText);
+
+            if (carDetails.conidence !== undefined && carDetails.confidence === undefined) {
+                carDetails.confidence = carDetails.conidence;
+            }
 
             const requiredFields = [
                 "make",
@@ -132,7 +136,7 @@ export async function processCarImageWithAI(file) {
                 "fuelType",
                 "transmission",
                 "description",
-                "conidence",
+                "confidence",
             ];
 
             const missingFields = requiredFields.filter((field) => !(field in carDetails));
@@ -166,7 +170,7 @@ export async function processCarImageWithAI(file) {
                     fuelType: "",
                     transmission: "",
                     description: "",
-                    conidence: 0.0,
+                    confidence: 0.0,
                 },
             };
         }
@@ -187,7 +191,7 @@ export async function processCarImageWithAI(file) {
                 fuelType: "",
                 transmission: "",
                 description: "",
-                conidence: 0.0,
+                confidence: 0.0,
             },
         };
     }
@@ -202,7 +206,9 @@ export async function addCar({carData, images}) {
         where: { clerkUserId: userId},
        });
 
-        if (!user) throw new Error("User not found");
+        if (!user || user.role !== "ADMIN") {
+            throw new Error("Unauthorized: Admin access required");
+        }
 
         const carId = uuidv4();
         const folderPath =`cars/${carId}`;
@@ -281,7 +287,9 @@ export async function getCars(search="") {
         where: { clerkUserId: userId},
        });
 
-        if (!user) throw new Error("User not found");
+        if (!user || user.role !== "ADMIN") {
+            throw new Error("Unauthorized: Admin access required");
+        }
          
         let where = {};
 
@@ -320,7 +328,9 @@ export async function deleteCar(id) {
         where: { clerkUserId: userId},
        });
 
-        if (!user) throw new Error("User not found");
+        if (!user || user.role !== "ADMIN") {
+            throw new Error("Unauthorized: Admin access required");
+        }
 
         const car = await db.car.findUnique({
             where: {id},
@@ -335,34 +345,37 @@ export async function deleteCar(id) {
             };
         }
 
+        // Delete associated test drive bookings first to prevent foreign key violation
+        await db.testDrivesBooking.deleteMany({
+            where: { carId: id },
+        });
+
         await db.car.delete({
             where: {id},
         });
 
-try {
-            const cookieStore = await cookies();
-            const supabase = createClient(cookieStore);
+        try {
+            const supabase = createAdminClient();
 
-                        const filePaths = (car.image || []).map((imageUrl) => {
-                                    try {
-                                        const url = new URL(imageUrl);
-                                        const pathMatch = url.pathname.match(/\/cars-images\/(.*)/);
-                                        return pathMatch ? pathMatch[1] : null;
-                                    } catch (e) {
-                                        return null;
-                                    }
-                 }).filter(Boolean)
+            const filePaths = (car.image || []).map((imageUrl) => {
+                try {
+                    const url = new URL(imageUrl);
+                    const pathMatch = url.pathname.match(/\/cars-images\/(.*)/);
+                    return pathMatch ? pathMatch[1] : null;
+                } catch (e) {
+                    return null;
+                }
+            }).filter(Boolean);
 
-         if (filePaths.length > 0){
-                        const { error} = await supabase.storage
-                        .from("cars-images")
-                        .remove(filePaths);
+            if (filePaths.length > 0){
+                const { error} = await supabase.storage
+                    .from("cars-images")
+                    .remove(filePaths);
 
-            if(error) {
-                console.error("Error deleting images:",error);
+                if(error) {
+                    console.error("Error deleting images:",error);
+                }
             }
-         }
-            
         } catch (storageError) {
             console.error("Error with storage operations:",storageError);
         } 
@@ -389,7 +402,9 @@ export async function updateCarStatus(id,{ status, featured}) {
         where: { clerkUserId: userId},
        });
 
-        if (!user) throw new Error("User not found");
+        if (!user || user.role !== "ADMIN") {
+            throw new Error("Unauthorized: Admin access required");
+        }
          
         const updateData ={};
         if (status !== undefined) {

@@ -67,7 +67,7 @@ export const CarFilters = ({ filters }) => {
   ].filter(Boolean).length;
 
   // Update URL when filters change
-  const applyFilters = useCallback(() => {
+  const applyFilters = useCallback((overrideSort = sortBy) => {
     const params = new URLSearchParams();
 
     if (make) params.set("make", make);
@@ -78,7 +78,7 @@ export const CarFilters = ({ filters }) => {
       params.set("minPrice", priceRange[0].toString());
     if (priceRange[1] < filters.priceRange.max)
       params.set("maxPrice", priceRange[1].toString());
-    if (sortBy !== "newest") params.set("sortBy", sortBy);
+    if (overrideSort !== "newest") params.set("sortBy", overrideSort);
 
     // Preserve search and page params if they exist
     const search = searchParams.get("search");
@@ -218,8 +218,7 @@ export const CarFilters = ({ filters }) => {
         value={sortBy}
         onValueChange={(value) => {
           setSortBy(value);
-          // Apply filters immediately when sort changes
-          setTimeout(() => applyFilters(), 0);
+          applyFilters(value);
         }}
       >
         <SelectTrigger className="w-[180px] lg:w-full">

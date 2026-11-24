@@ -3,6 +3,7 @@ import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { unstable_cache } from "next/cache";
 
 // Function to serialize car data
 function serializeCarData(car) {
@@ -16,29 +17,33 @@ function serializeCarData(car) {
 }
 
 /**
- * Get featured cars for the homepage
+ * Get featured cars for the homepage (cached for performance)
  */
-export async function getFeaturedCars(limit = 3) {
-  if (!process.env.DATABASE_URL) {
-    return [];
-  }
+export const getFeaturedCars = unstable_cache(
+  async (limit = 3) => {
+    if (!process.env.DATABASE_URL) {
+      return [];
+    }
 
-  try {
-    const cars = await db.car.findMany({
-      where: {
-        featured: true,
-        status: "AVAILABLE",
-      },
-      take: limit,
-      orderBy: { createdAt: "desc" },
-    });
+    try {
+      const cars = await db.car.findMany({
+        where: {
+          featured: true,
+          status: "AVAILABLE",
+        },
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      });
 
-    return cars.map(serializeCarData);
-  } catch (error) {
-    console.error("Error fetching featured cars:", error.message);
-    return [];
-  }
-}
+      return cars.map(serializeCarData);
+    } catch (error) {
+      console.error("Error fetching featured cars:", error.message);
+      return [];
+    }
+  },
+  ["featured-cars"],
+  { revalidate: 60, tags: ["cars"] }
+);
 
 // Function to convert File to base64
 async function fileToBase64(file) {

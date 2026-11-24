@@ -10,9 +10,6 @@ try {
 }
 
 const nextConfig = { 
-    experimental:{
-        serverComponentsHmrCache:false,
-    },
     images: {
         remotePatterns: SUPABASE_HOSTNAME
             ? [

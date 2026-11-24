@@ -4,7 +4,7 @@ import { Badge } from "./badge";
 import {format, parseISO } from "date-fns";
 import { Card } from "./card";
 import Image from "next/image";
-import { ArrowRight, Calendar, Car, Clock, Loader2 } from "lucide-react";
+import { ArrowRight, Calendar, Car, Clock, Loader2, User } from "lucide-react";
 import { Button } from "./button";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./dialog";

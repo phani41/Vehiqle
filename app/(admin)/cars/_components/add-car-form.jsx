@@ -159,7 +159,7 @@ export const AddCarForm = () => {
       toast.success("Successfully extracted car details", {
         description: `Detected ${carDetails.year} ${carDetails.make} ${
           carDetails.model
-        } with ${Math.round(carDetails.confidence * 100)}% confidence`,
+        } with ${Math.round((carDetails.confidence ?? carDetails.conidence ?? 0.9) * 100)}% confidence`,
       });
 
       // Switch to manual tab for the user to review and fill in missing details

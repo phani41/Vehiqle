@@ -1,7 +1,7 @@
 "use client";
 
 import { SignOutButton } from "@clerk/nextjs";
-import { Calendar, Car, Cog, LayoutDashboard, LogOut } from "lucide-react";
+import { ArrowLeft, Calendar, Car, Cog, LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,14 @@ export const Sidebar = () => {
             </Link>
           ))}
         </div>
-        <div className="mt-auto p-6">
+        <div className="mt-auto p-6 space-y-3">
+          <Link
+            href="/"
+            className="flex items-center gap-x-2 text-slate-500 text-sm font-medium transition-all hover:text-slate-600"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Back to App
+          </Link>
           <SignOutButton>
             <button className="flex items-center gap-x-2 text-slate-500 text-sm font-medium transition-all hover:text-slate-600">
               <LogOut className="h-5 w-5" />

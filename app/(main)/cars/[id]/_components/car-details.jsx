@@ -260,10 +260,10 @@ export function CarDetails({ car, testDriveInfo }) {
             <Button
               className="w-full py-6 text-lg"
               onClick={handleBookTestDrive}
-              disabled={testDriveInfo.userTestDrive}
+              disabled={!!testDriveInfo?.userTestDrive}
             >
               <Calendar className="mr-2 h-5 w-5" />
-              {testDriveInfo.userTestDrive
+              {testDriveInfo?.userTestDrive
                 ? `Booked for ${format(
                     new Date(testDriveInfo.userTestDrive.bookingDate),
                     "EEEE, MMMM d, yyyy"
@@ -373,13 +373,13 @@ export function CarDetails({ car, testDriveInfo }) {
               <div>
                 <h4 className="font-medium">Vehiql Motors</h4>
                 <p className="text-gray-600">
-                  {testDriveInfo.dealership?.address || "Not Available"}
+                  {testDriveInfo?.dealership?.address || "Not Available"}
                 </p>
                 <p className="text-gray-600 mt-1">
-                  Phone: {testDriveInfo.dealership?.phone || "Not Available"}
+                  Phone: {testDriveInfo?.dealership?.phone || "Not Available"}
                 </p>
                 <p className="text-gray-600">
-                  Email: {testDriveInfo.dealership?.email || "Not Available"}
+                  Email: {testDriveInfo?.dealership?.email || "Not Available"}
                 </p>
               </div>
             </div>
@@ -388,7 +388,7 @@ export function CarDetails({ car, testDriveInfo }) {
             <div className="md:w-1/2 lg:w-1/3">
               <h4 className="font-medium mb-2">Working Hours</h4>
               <div className="space-y-2">
-                {testDriveInfo.dealership?.workingHours
+                {testDriveInfo?.dealership?.workingHours
                   ? testDriveInfo.dealership.workingHours
                       .sort((a, b) => {
                         const days = [

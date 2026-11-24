@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
+import "react-day-picker/style.css";
 import { cn } from "@/lib/utils";
 
 // Simple Calendar wrapper compatible with shadcn usage

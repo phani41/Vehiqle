@@ -175,7 +175,6 @@ const CarsList = () => {
                               height={40}
                               width={40}
                               className="w-full h-full object-contain object-center bg-white"
-                              priority
                             />
                             ) : (
                             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -261,9 +260,6 @@ const CarsList = () => {
                               <Trash2 className="mr-2 h-4 w-4"/>
                               Delete
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Team</DropdownMenuItem>
-                            
-                             <DropdownMenuItem>Subscription</DropdownMenuItem>
                           </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -271,12 +267,6 @@ const CarsList = () => {
     </TableRow>
        );
     })}
-    <TableRow>
-      <TableCell className="font-medium">INV001</TableCell>
-      <TableCell>Paid</TableCell>
-      <TableCell>Credit Card</TableCell>
-      <TableCell className="text-right">$250.00</TableCell>
-    </TableRow>
   </TableBody>
 </Table>
       </div>

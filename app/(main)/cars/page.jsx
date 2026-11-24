@@ -1,16 +1,34 @@
-import { getCarFilters } from "@/actions/car-listing";
+import { getCarFilters, getCars } from "@/actions/car-listing";
 import { CarFilters } from "./_components/car-filters";
 import { CarListings } from "./_components/car-listing";
-
 
 export const metadata = {
   title: "Cars | Vehiqle",
   description: "Browse and search for your dream car",
 };
 
-export default async function CarsPage() {
-  // Fetch filters data on the server
-  const filtersData = await getCarFilters();
+export default async function CarsPage({ searchParams }) {
+  const resolvedParams = (await searchParams) || {};
+  const page = parseInt(resolvedParams.page || "1");
+  const minPrice = resolvedParams.minPrice ? parseFloat(resolvedParams.minPrice) : 0;
+  const maxPrice = resolvedParams.maxPrice ? parseFloat(resolvedParams.maxPrice) : Number.MAX_SAFE_INTEGER;
+
+  // Fetch filters AND cars on the server in parallel (SSR for instant first paint)
+  const [filtersData, initialCarsData] = await Promise.all([
+    getCarFilters(),
+    getCars({
+      search: resolvedParams.search || "",
+      make: resolvedParams.make || "",
+      bodyType: resolvedParams.bodyType || "",
+      fuelType: resolvedParams.fuelType || "",
+      transmission: resolvedParams.transmission || "",
+      minPrice,
+      maxPrice,
+      sortBy: resolvedParams.sortBy || "newest",
+      page,
+      limit: 6,
+    }),
+  ]);
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -24,7 +42,7 @@ export default async function CarsPage() {
 
         {/* Car Listings */}
         <div className="flex-1">
-          <CarListings />
+          <CarListings initialData={initialCarsData} />
         </div>
       </div>
     </div>

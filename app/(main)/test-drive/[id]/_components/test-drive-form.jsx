@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import useFetch from "@/hooks/use-fetch";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfDay, isBefore } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarIcon, Car, CheckCircle2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -71,7 +71,10 @@ export function TestDriveForm({ car, testDriveInfo }) {
   useEffect(() => {
     if (bookingResult?.success) {
       setBookingDetails({
-        date: format(bookingResult?.data?.bookingDate, "EEEE, MMMM d, yyyy"),
+        date: format(
+          new Date(bookingResult?.data?.bookingDate),
+          "EEEE, MMMM d, yyyy"
+        ),
         timeSlot: `${format(
           parseISO(`2022-01-01T${bookingResult?.data?.startTime}`),
           "h:mm a"
@@ -150,8 +153,8 @@ export function TestDriveForm({ car, testDriveInfo }) {
 
   // Create a function to determine which days should be disabled
   const isDayDisabled = (day) => {
-    // Disable past dates
-    if (day < new Date()) {
+    // Disable past dates (keep today enabled)
+    if (isBefore(startOfDay(day), startOfDay(new Date()))) {
       return true;
     }
 
