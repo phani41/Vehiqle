@@ -1,87 +1,44 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { calculateEMI, formatNumber } from "@/lib/helper";
 
 function EmiCalculator({ price = 1000 }) {
   const [loanAmount, setLoanAmount] = useState(price);
   const [downPayment, setDownPayment] = useState(0);
-  const [downPaymentPercent, setDownPaymentPercent] = useState(0);
   const [interestRate, setInterestRate] = useState(5);
   const [loanTenure, setLoanTenure] = useState(1);
-  const [results, setResults] = useState(null);
-  const [error, setError] = useState("");
+
+  // Memoized EMI calculation to avoid repetitive long calculations
+  const results = useMemo(() => {
+    return calculateEMI(loanAmount, downPayment, interestRate, loanTenure);
+  }, [loanAmount, downPayment, interestRate, loanTenure]);
+
+  const downPaymentPercent = useMemo(() => {
+    return loanAmount > 0 ? (downPayment / loanAmount) * 100 : 0;
+  }, [loanAmount, downPayment]);
 
   const handleLoanAmountChange = (value) => {
     const safeValue = isNaN(value) ? 0 : value;
     const newLoanAmount = Math.min(Math.max(safeValue, 1000), 150000);
     setLoanAmount(newLoanAmount);
-    const newDownPayment = (downPaymentPercent / 100) * newLoanAmount;
-    setDownPayment(newDownPayment);
-    calculateLoan(newLoanAmount, newDownPayment, interestRate, loanTenure);
+    setDownPayment((prev) => Math.min(prev, newLoanAmount));
   };
 
   const handleDownPaymentChange = (value) => {
     const safeValue = isNaN(value) ? 0 : value;
     const newDownPayment = Math.min(Math.max(safeValue, 0), loanAmount);
     setDownPayment(newDownPayment);
-    setDownPaymentPercent(loanAmount > 0 ? (newDownPayment / loanAmount) * 100 : 0);
-    calculateLoan(loanAmount, newDownPayment, interestRate, loanTenure);
-  };
-
-  const handleDownPaymentPercentChange = (percent) => {
-    const safePercent = isNaN(percent) ? 0 : percent;
-    const newPercent = Math.min(Math.max(safePercent, 0), 100);
-    setDownPaymentPercent(newPercent);
-    const newDownPayment = (newPercent / 100) * loanAmount;
-    setDownPayment(newDownPayment);
-    calculateLoan(loanAmount, newDownPayment, interestRate, loanTenure);
   };
 
   const handleInterestRateChange = (value) => {
     const safeRate = isNaN(value) ? 0.1 : value;
-    const newRate = Math.min(Math.max(safeRate, 0.1), 25);
-    setInterestRate(newRate);
-    calculateLoan(loanAmount, downPayment, newRate, loanTenure);
+    setInterestRate(Math.min(Math.max(safeRate, 0.1), 25));
   };
 
   const handleLoanTenureChange = (value) => {
     const safeTenure = isNaN(value) ? 1 : value;
-    const newTenure = Math.min(Math.max(safeTenure, 1), 8);
-    setLoanTenure(newTenure);
-    calculateLoan(loanAmount, downPayment, interestRate, newTenure);
-  };
-
-  const calculateLoan = (principal, down, rate, years) => {
-    const loanPrincipal = principal - down;
-    if (loanPrincipal <= 0) {
-      setResults(null);
-      return;
-    }
-
-    const monthlyRate = rate / 100 / 12;
-    const months = years * 12;
-
-    const emi =
-      (loanPrincipal * monthlyRate * Math.pow(1 + monthlyRate, months)) /
-      (Math.pow(1 + monthlyRate, months) - 1);
-    const totalPayment = emi * months;
-    const totalInterest = totalPayment - loanPrincipal;
-
-    setResults({
-      emi: emi.toFixed(2),
-      totalInterest: totalInterest.toFixed(2),
-      totalPayment: totalPayment.toFixed(2),
-      loanPrincipal: loanPrincipal.toFixed(2),
-      downPayment: down.toFixed(2),
-    });
-  };
-
-  useEffect(() => {
-    calculateLoan(loanAmount, downPayment, interestRate, loanTenure);
-  }, []);
-
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat("en-US").format(num);
+    setLoanTenure(Math.min(Math.max(safeTenure, 1), 8));
   };
 
   return (
@@ -223,12 +180,6 @@ function EmiCalculator({ price = 1000 }) {
               </div>
             </div>
           </div>
-
-          {error && (
-            <div className="text-red-500 dark:text-red-400 text-sm mt-3">
-              {error}
-            </div>
-          )}
 
           {results && (
             <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mt-4">

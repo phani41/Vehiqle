@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Heart, Car as CarIcon, Loader2} from "lucide-react";
+import Link from "next/link";
+import { Heart, Car as CarIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import useFetch from "@/hooks/use-fetch";
 import { toggleSavedCar } from "@/actions/car-listing";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
+import { formatCurrency, formatNumber } from "@/lib/helper";
 
 export const CarCard = ({ car }) => {
   const { isSignedIn } = useAuth();
@@ -25,7 +27,7 @@ export const CarCard = ({ car }) => {
     error: toggleError,
   } = useFetch(toggleSavedCar);
 
-  // Handle toggle result with useEffect
+  // Sync state if server action returns an update
   useEffect(() => {
     if (toggleResult?.success && toggleResult.saved !== isSaved) {
       setIsSaved(toggleResult.saved);
@@ -33,14 +35,15 @@ export const CarCard = ({ car }) => {
     }
   }, [toggleResult, isSaved]);
 
-  // Handle errors with useEffect
+  // Revert optimistic update on error
   useEffect(() => {
     if (toggleError) {
+      setIsSaved((prev) => !prev);
       toast.error("Failed to update favorites");
     }
   }, [toggleError]);
 
-  // Handle save/unsave car
+  // Handle save/unsave car with optimistic UI
   const handleToggleSave = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -53,15 +56,27 @@ export const CarCard = ({ car }) => {
 
     if (isToggling) return;
 
-    // Call the toggleSavedCar function using our useFetch hook
-    await toggleSavedCarFn(car.id);
+    // Instant optimistic update
+    const previousState = isSaved;
+    setIsSaved(!previousState);
+
+    try {
+      const res = await toggleSavedCarFn(car.id);
+      if (res && !res.success) {
+        setIsSaved(previousState);
+      }
+    } catch {
+      setIsSaved(previousState);
+    }
   };
+
+  const carUrl = `/cars/${car.id}`;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition group">
       <div className="relative h-48">
-        {car.images && car.images.length > 0 ? (
-          <div className="relative w-full h-full overflow-hidden">
+        <Link href={carUrl} prefetch={true} className="block relative w-full h-full overflow-hidden">
+          {car.images && car.images.length > 0 ? (
             <Image
               src={car.images[0]}
               alt={`${car.make} ${car.model}`}
@@ -69,17 +84,17 @@ export const CarCard = ({ car }) => {
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-contain object-center group-hover:scale-105 transition duration-300 bg-white"
             />
-          </div>
-        ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-            <CarIcon className="h-12 w-12 text-gray-400" />
-          </div>
-        )}
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <CarIcon className="h-12 w-12 text-gray-400" />
+            </div>
+          )}
+        </Link>
 
         <Button
           variant="ghost"
           size="icon"
-          className={`absolute top-2 right-2 bg-white/90 rounded-full p-1.5 ${
+          className={`absolute top-2 right-2 bg-white/90 rounded-full p-1.5 z-10 ${
             isSaved
               ? "text-red-500 hover:text-red-600"
               : "text-gray-600 hover:text-gray-900"
@@ -97,11 +112,13 @@ export const CarCard = ({ car }) => {
 
       <CardContent className="p-4">
         <div className="flex flex-col mb-2">
-          <h3 className="text-lg font-bold line-clamp-1">
-            {car.make} {car.model}
-          </h3>
+          <Link href={carUrl} prefetch={true} className="hover:text-blue-600 transition-colors">
+            <h3 className="text-lg font-bold line-clamp-1">
+              {car.make} {car.model}
+            </h3>
+          </Link>
           <span className="text-xl font-bold text-blue-600">
-            ${car.price.toLocaleString()}
+            {formatCurrency(car.price)}
           </span>
         </div>
 
@@ -118,7 +135,7 @@ export const CarCard = ({ car }) => {
             {car.bodyType}
           </Badge>
           <Badge variant="outline" className="bg-gray-50">
-            {car.mileage.toLocaleString()} miles
+            {formatNumber(car.mileage)} miles
           </Badge>
           <Badge variant="outline" className="bg-gray-50">
             {car.color}
@@ -126,13 +143,10 @@ export const CarCard = ({ car }) => {
         </div>
 
         <div className="flex justify-between">
-          <Button
-            className="flex-1"
-            onClick={() => {
-              router.push(`/cars/${car.id}`);
-            }}
-          >
-            View Car
+          <Button asChild className="flex-1">
+            <Link href={carUrl} prefetch={true}>
+              View Car
+            </Link>
           </Button>
         </div>
       </CardContent>

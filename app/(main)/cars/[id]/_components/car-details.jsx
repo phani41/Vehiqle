@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { useAuth } from "@clerk/nextjs";
 import { Calendar, Car, Currency, Fuel, Gauge, Heart, LocateFixed, MessageSquare, Share2} from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -257,19 +258,33 @@ export function CarDetails({ car, testDriveInfo }) {
 
           {/* Book Test Drive Button */}
           {car.status !== "SOLD" && car.status !== "UNAVAILABLE" && (
-            <Button
-              className="w-full py-6 text-lg"
-              onClick={handleBookTestDrive}
-              disabled={!!testDriveInfo?.userTestDrive}
-            >
-              <Calendar className="mr-2 h-5 w-5" />
-              {testDriveInfo?.userTestDrive
-                ? `Booked for ${format(
-                    new Date(testDriveInfo.userTestDrive.bookingDate),
-                    "EEEE, MMMM d, yyyy"
-                  )}`
-                : "Book Test Drive"}
-            </Button>
+            testDriveInfo?.userTestDrive ? (
+              <Button
+                className="w-full py-6 text-lg"
+                disabled
+              >
+                <Calendar className="mr-2 h-5 w-5" />
+                Booked for {format(
+                  new Date(testDriveInfo.userTestDrive.bookingDate),
+                  "EEEE, MMMM d, yyyy"
+                )}
+              </Button>
+            ) : isSignedIn ? (
+              <Button asChild className="w-full py-6 text-lg">
+                <Link href={`/test-drive/${car.id}`} prefetch={true}>
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Book Test Drive
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                className="w-full py-6 text-lg"
+                onClick={handleBookTestDrive}
+              >
+                <Calendar className="mr-2 h-5 w-5" />
+                Book Test Drive
+              </Button>
+            )
           )}
         </div>
       </div>

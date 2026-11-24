@@ -4,17 +4,7 @@ import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { unstable_cache } from "next/cache";
-
-// Function to serialize car data
-function serializeCarData(car) {
-  return {
-    ...car,
-    images: car.image || [],
-    price: car.price ? parseFloat(car.price.toString()) : 0,
-    createdAt: car.createdAt?.toISOString(),
-    updatedAt: car.updatedAt?.toISOString(),
-  };
-}
+import { serializeCarData } from "@/lib/helper";
 
 /**
  * Get featured cars for the homepage (cached for performance)

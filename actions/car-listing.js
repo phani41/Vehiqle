@@ -2,86 +2,89 @@
 import { serializedCarData } from "@/lib/helper";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { revalidatePath } from "next/cache";
-
-
+import { revalidatePath, unstable_cache } from "next/cache";
+import { cache } from "react";
 
 /**
- * Get simplified filters for the car marketplace
+ * Get simplified filters for the car marketplace (cached for performance)
  */
-export async function getCarFilters() {
-  if (!process.env.DATABASE_URL) {
-    return {
-      success: true,
-      data: {
-        makes: [],
-        bodyTypes: [],
-        fuelTypes: [],
-        transmissions: [],
-        priceRange: {
-          min: 0,
-          max: 100000,
+export const getCarFilters = unstable_cache(
+  async () => {
+    if (!process.env.DATABASE_URL) {
+      return {
+        success: true,
+        data: {
+          makes: [],
+          bodyTypes: [],
+          fuelTypes: [],
+          transmissions: [],
+          priceRange: {
+            min: 0,
+            max: 100000,
+          },
         },
-      },
-    };
-  }
+      };
+    }
 
-  try {
-    // Run all filter aggregation queries in parallel
-    const [makes, bodyTypes, fuelTypes, transmissions, priceAggregations] =
-      await Promise.all([
-        db.car.findMany({
-          where: { status: "AVAILABLE" },
-          select: { make: true },
-          distinct: ["make"],
-          orderBy: { make: "asc" },
-        }),
-        db.car.findMany({
-          where: { status: "AVAILABLE" },
-          select: { bodyType: true },
-          distinct: ["bodyType"],
-          orderBy: { bodyType: "asc" },
-        }),
-        db.car.findMany({
-          where: { status: "AVAILABLE" },
-          select: { fuelType: true },
-          distinct: ["fuelType"],
-          orderBy: { fuelType: "asc" },
-        }),
-        db.car.findMany({
-          where: { status: "AVAILABLE" },
-          select: { transmission: true },
-          distinct: ["transmission"],
-          orderBy: { transmission: "asc" },
-        }),
-        db.car.aggregate({
-          where: { status: "AVAILABLE" },
-          _min: { price: true },
-          _max: { price: true },
-        }),
-      ]);
+    try {
+      // Run all filter aggregation queries in parallel
+      const [makes, bodyTypes, fuelTypes, transmissions, priceAggregations] =
+        await Promise.all([
+          db.car.findMany({
+            where: { status: "AVAILABLE" },
+            select: { make: true },
+            distinct: ["make"],
+            orderBy: { make: "asc" },
+          }),
+          db.car.findMany({
+            where: { status: "AVAILABLE" },
+            select: { bodyType: true },
+            distinct: ["bodyType"],
+            orderBy: { bodyType: "asc" },
+          }),
+          db.car.findMany({
+            where: { status: "AVAILABLE" },
+            select: { fuelType: true },
+            distinct: ["fuelType"],
+            orderBy: { fuelType: "asc" },
+          }),
+          db.car.findMany({
+            where: { status: "AVAILABLE" },
+            select: { transmission: true },
+            distinct: ["transmission"],
+            orderBy: { transmission: "asc" },
+          }),
+          db.car.aggregate({
+            where: { status: "AVAILABLE" },
+            _min: { price: true },
+            _max: { price: true },
+          }),
+        ]);
 
-    return {
-      success: true,
-      data: {
-        makes: makes.map((item) => item.make),
-        bodyTypes: bodyTypes.map((item) => item.bodyType),
-        fuelTypes: fuelTypes.map((item) => item.fuelType),
-        transmissions: transmissions.map((item) => item.transmission),
-        priceRange: {
-          min: priceAggregations._min.price
-            ? parseFloat(priceAggregations._min.price.toString())
-            : 0,
-          max: priceAggregations._max.price
-            ? parseFloat(priceAggregations._max.price.toString())
-            : 100000,
+      return {
+        success: true,
+        data: {
+          makes: makes.map((item) => item.make),
+          bodyTypes: bodyTypes.map((item) => item.bodyType),
+          fuelTypes: fuelTypes.map((item) => item.fuelType),
+          transmissions: transmissions.map((item) => item.transmission),
+          priceRange: {
+            min: priceAggregations._min.price
+              ? parseFloat(priceAggregations._min.price.toString())
+              : 0,
+            max: priceAggregations._max.price
+              ? parseFloat(priceAggregations._max.price.toString())
+              : 100000,
+          },
         },
-      },
-    };
-  } catch (error) {
-    throw new Error("Error fetching car filters:" + error.message);
-  }
-}
+      };
+    } catch (error) {
+      throw new Error("Error fetching car filters:" + error.message);
+    }
+  },
+  ["car-filters"],
+  { revalidate: 60, tags: ["cars", "car-filters"] }
+);
 
 /**
  * Get cars with simplified filters
@@ -282,9 +285,9 @@ export async function toggleSavedCar(carId) {
 }
 
 /**
- * Get car details by ID
+ * Get car details by ID (cached per request to dedupe generateMetadata and page render)
  */
-export async function getCarById(carId) {
+export const getCarById = cache(async (carId) => {
   if (!process.env.DATABASE_URL) {
     return {
       success: false,
@@ -381,7 +384,7 @@ export async function getCarById(carId) {
   } catch (error) {
     throw new Error("Error fetching car details:" + error.message);
   }
-}
+});
 
 /**
  * Get user's saved cars

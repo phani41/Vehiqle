@@ -268,7 +268,9 @@ export async function addCar({carData, images}) {
       },
     });
 
-    revalidatePath('/admin/cars')
+    revalidatePath('/admin/cars');
+    revalidatePath('/cars');
+    revalidatePath('/');
     return{
         success: true,
     };
@@ -380,6 +382,8 @@ export async function deleteCar(id) {
             console.error("Error with storage operations:",storageError);
         } 
           revalidatePath("/admin/cars");
+          revalidatePath("/cars");
+          revalidatePath("/");
            
           return {
             success: true,
@@ -421,6 +425,8 @@ export async function updateCarStatus(id,{ status, featured}) {
         });
 
         revalidatePath("/admin/cars");
+        revalidatePath("/cars");
+        revalidatePath("/");
            
           return {
             success: true,
