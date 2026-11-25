@@ -98,7 +98,7 @@
 ### 1. Clone & Install Dependencies
 
 ```bash
-git clone https://github.com/Saiphanikum/Vehiqle.git
+git clone https://github.com/phani41/Vehiqle.git
 cd Vehiqle
 npm install
 ```
