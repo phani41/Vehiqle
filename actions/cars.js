@@ -1,5 +1,5 @@
 "use server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithOllama } from "@/lib/ollama";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase";
 import { db } from "@/lib/prisma";
@@ -36,13 +36,49 @@ export async function processCarImageWithAI(file) {
         };
     }
 
-    // Safe wrapper around Gemini AI - do not let failures crash the app
+    // Safe wrapper around Local Ollama AI - runs offline without internet or API keys
     try {
-        if (!process.env.GEMINI_API_KEY) {
-            console.warn("GEMINI_API_KEY is not configured; skipping AI analysis");
+        const base64Image = await fileToBase64(file);
+
+        const prompt = `
+Analyze this car image and extract the following information:
+1. Make (manufacturer)
+2. Model
+3. Year (approximately, integer)
+4. Color
+5. Body type (SUV, Sedan, Hatchback, Coupe, etc.)
+6. Mileage (estimated integer or text)
+7. Fuel type (Petrol, Diesel, Electric, Hybrid)
+8. Transmission type (Automatic or Manual)
+9. Price (estimated number string)
+10. Short Description as to be added to car listing
+
+Format your response strictly as a JSON object with these exact keys:
+{
+  "make": "",
+  "model": "",
+  "year": 2020,
+  "color": "",
+  "price": "25000",
+  "bodyType": "",
+  "mileage": "35000",
+  "fuelType": "",
+  "transmission": "",
+  "description": "",
+  "confidence": 0.95
+}
+Only return the JSON object, nothing else.`;
+
+        const result = await generateWithOllama({
+            prompt,
+            imageBase64: base64Image,
+            format: "json",
+        });
+
+        if (!result.success) {
             return {
                 success: false,
-                error: "GEMINI_API_KEY not configured",
+                error: result.error,
                 data: {
                     make: "",
                     model: "",
@@ -59,64 +95,7 @@ export async function processCarImageWithAI(file) {
             };
         }
 
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        const base64Image = await fileToBase64(file);
-
-        const imagePart = {
-            inlineData: {
-                data: base64Image,
-                mimeType: file.type,
-            },
-        };
-
-        const prompt = `
-                        Analyze this car image and extract the following information:
-                        1. Make (manufacturer)
-                        2. Model
-                        3. Year (approximately)
-                        4. Color
-                        5. Body type (SUV, sedan, Hatchback, etc.)
-                        6. Mileage
-                        7. Fuel type (your best guess)
-                        8. Transmission type (your best guess)
-                        9. price (your best guess)
-                        10. Short Description as to be added to car listing
-             
-                        Format your response as a clean JSON object with these fields:
-                        {
-                                "make": "",
-                                "model": "",
-                                "year": 0000,
-                                "color": "",
-                                "price": "",
-                                "bodyType": "",
-                                "mileage": "",
-                                "fuelType": "",
-                                "transmission": "",
-                                "description": "",
-                                "confidence": 0.0
-                        }
-                             For confidence, provide a value between 0 and 1 representing how confident you are in your overall identification.
-                             Only respond with the JSON objects,nothing else.
-
-                        `;
-
-        const result = await model.generateContent([imagePart, prompt]);
-
-        // Guard against different SDK response shapes
-        let text = "";
-        if (result?.response) {
-            const resp = result.response;
-            text = typeof resp.text === "function" ? await resp.text() : String(resp);
-        } else if (typeof result.text === "function") {
-            text = await result.text();
-        } else {
-            text = String(result);
-        }
-
-        const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+        const cleanedText = result.text.replace(/```(?:json)?\n?/g, "").trim();
 
         try {
             const carDetails = JSON.parse(cleanedText);
@@ -154,11 +133,11 @@ export async function processCarImageWithAI(file) {
                 success: true,
                 data: carDetails,
             };
-        } catch (error) {
-            console.error("Failed to parse AI response:", error);
+        } catch (parseError) {
+            console.error("Failed to parse Ollama AI response:", parseError);
             return {
                 success: false,
-                error: "Failed to parse AI response",
+                error: "Failed to parse Ollama AI response",
                 data: {
                     make: "",
                     model: "",
@@ -175,11 +154,10 @@ export async function processCarImageWithAI(file) {
             };
         }
     } catch (error) {
-        // Any Gemini/SDK error should be logged but not thrown
-        console.error("Gemini AI error:", error);
+        console.error("Ollama AI processing error:", error);
         return {
             success: false,
-            error: "Gemini AI error",
+            error: "Ollama AI error: " + error.message,
             data: {
                 make: "",
                 model: "",

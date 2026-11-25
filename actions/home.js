@@ -2,7 +2,7 @@
 import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithOllama } from "@/lib/ollama";
 import { unstable_cache } from "next/cache";
 import { serializeCarData } from "@/lib/helper";
 
@@ -43,7 +43,7 @@ async function fileToBase64(file) {
 }
 
 /**
- * Process car image with Gemini AI
+ * Process car image with Local Ollama AI (runs locally/offline)
  */
 export async function processImageSearch(file) {
   try {
@@ -72,55 +72,42 @@ export async function processImageSearch(file) {
       throw new Error("Request blocked");
     }
 
-    // Check if API key is available
-    if (!process.env.GEMINI_API_KEY) {
-      return {
-        success: false,
-        error: "Gemini API key is not configured",
-      };
-    }
-
-    // Initialize Gemini API
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // Use a supported Gemini model; gemini-1.5-flash is not available for v1beta in this environment.
-    // Match other usage in the repo which uses "gemini-2.0-flash".
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
     // Convert image file to base64
     const base64Image = await fileToBase64(file);
 
-    // Create image part for the model
-    const imagePart = {
-      inlineData: {
-        data: base64Image,
-        mimeType: file.type,
-      },
-    };
-
     // Define the prompt for car search extraction
     const prompt = `
-      Analyze this car image and extract the following information for a search query:
-      1. Make (manufacturer)
-      2. Body type (SUV, Sedan, Hatchback, etc.)
-      3. Color
+Analyze this car image and extract the following information for a search query:
+1. Make (manufacturer)
+2. Body type (SUV, Sedan, Hatchback, Coupe, etc.)
+3. Color
 
-      Format your response as a clean JSON object with these fields:
-      {
-        "make": "",
-        "bodyType": "",
-        "color": "",
-        "confidence": 0.0
-      }
+Format your response strictly as a clean JSON object with these fields:
+{
+  "make": "",
+  "bodyType": "",
+  "color": "",
+  "confidence": 0.95
+}
 
-      For confidence, provide a value between 0 and 1 representing how confident you are in your overall identification.
-      Only respond with the JSON object, nothing else.
-    `;
+For confidence, provide a value between 0 and 1 representing how confident you are in your overall identification.
+Only respond with the JSON object, nothing else.`;
 
-    // Get response from Gemini
-    const result = await model.generateContent([imagePart, prompt]);
-    const response = await result.response;
-    const text = response.text();
-    const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+    // Get response from Local Ollama AI (offline)
+    const result = await generateWithOllama({
+      prompt,
+      imageBase64: base64Image,
+      format: "json",
+    });
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+      };
+    }
+
+    const cleanedText = result.text.replace(/```(?:json)?\n?/g, "").trim();
 
     // Parse the JSON response
     try {
@@ -132,8 +119,7 @@ export async function processImageSearch(file) {
         data: carDetails,
       };
     } catch (parseError) {
-      console.error("Failed to parse AI response:", parseError);
-      console.log("Raw response:", text);
+      console.error("Failed to parse Ollama AI response:", parseError);
       return {
         success: false,
         error: "Failed to parse AI response",
