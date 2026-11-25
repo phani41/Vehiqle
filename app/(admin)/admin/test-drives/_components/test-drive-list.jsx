@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAdminTestDrives, updateTestDriveStatus } from "@/actions/admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,16 @@ export function TestDrivesList() {
     fn: updateBookingStatus,
   } = useFetch(updateTestDriveStatus);
 
+  // Debounce search to avoid firing on every keystroke
+  const debounceRef = useRef(null);
   useEffect(() => {
-    fetchBookings({ search, status });
-  }, [fetchBookings, search, status]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchBookings({ search, status });
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, status]);
 
   useEffect(() => {
     if (bookingsError) {
@@ -52,9 +59,11 @@ export function TestDrivesList() {
   useEffect(() => {
     if (updateResult?.success) {
       toast.success(updateResult.message || "Test drive updated");
+      // Re-fetch with current filters after a status update
       fetchBookings({ search, status });
     }
-  }, [fetchBookings, search, status, updateResult]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateResult]);
 
   const bookings = bookingsResult?.success ? bookingsResult.data : [];
 

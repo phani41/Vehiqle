@@ -4,10 +4,26 @@ import { carMakes, bodyTypes, faqItems } from "@/lib/data";
 import { Calendar, Car, ChevronRight, Shield } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { SignedOut } from "@clerk/nextjs";
-import { HomeSearch } from "@/components/ui/home-search";
 import { getFeaturedCars } from "@/actions/home";
+
+// Lazy-load the heavy HomeSearch component (uses react-dropzone + AI image upload)
+const HomeSearch = dynamic(
+  () => import("@/components/ui/home-search").then((m) => ({ default: m.HomeSearch })),
+  {
+    loading: () => (
+      <div className="mx-auto max-w-2xl">
+        <div className="flex w-full items-center gap-2 rounded-full border bg-white px-4 py-3 shadow-sm">
+          <div className="h-5 w-5 rounded-full bg-gray-200 animate-pulse" />
+          <div className="h-5 flex-1 rounded bg-gray-200 animate-pulse" />
+          <div className="h-9 w-24 rounded-full bg-gray-200 animate-pulse" />
+        </div>
+      </div>
+    ),
+  }
+);
 
 export default async function Home() {
 

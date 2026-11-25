@@ -15,7 +15,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import EmiCalculator from "./emi-calculator";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy-load the heavy EMI Calculator — only needed when user opens the dialog
+const EmiCalculator = dynamic(() => import("./emi-calculator"), {
+  loading: () => (
+    <div className="space-y-4 p-4">
+      <Skeleton className="h-6 w-32" />
+      {Array(4).fill(0).map((_, i) => (
+        <Skeleton key={i} className="h-16 w-full rounded-xl" />
+      ))}
+    </div>
+  ),
+  ssr: false,
+});
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function CarDetails({ car, testDriveInfo }) {

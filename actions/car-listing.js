@@ -172,6 +172,7 @@ export async function getCars({
     }
 
     // Execute count, cars query, and wishlisted query in parallel
+    // Only select the fields needed for the card — avoids fetching full description
     const [totalCars, cars, savedCars] = await Promise.all([
       db.car.count({ where }),
       db.car.findMany({
@@ -179,6 +180,23 @@ export async function getCars({
         take: limit,
         skip,
         orderBy,
+        select: {
+          id: true,
+          make: true,
+          model: true,
+          year: true,
+          price: true,
+          mileage: true,
+          color: true,
+          fuelType: true,
+          transmission: true,
+          bodyType: true,
+          status: true,
+          featured: true,
+          image: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       }),
       dbUser
         ? db.userSavedCar.findMany({
@@ -418,11 +436,29 @@ export async function getSavedCars() {
       };
     }
 
-    // Get saved cars with their details
+    // Get saved cars with only fields needed for card display
     const savedCars = await db.userSavedCar.findMany({
       where: { userId: user.id },
-      include: {
-        car: true,
+      select: {
+        car: {
+          select: {
+            id: true,
+            make: true,
+            model: true,
+            year: true,
+            price: true,
+            mileage: true,
+            color: true,
+            fuelType: true,
+            transmission: true,
+            bodyType: true,
+            status: true,
+            featured: true,
+            image: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
       orderBy: { savedAt: "desc" },
     });

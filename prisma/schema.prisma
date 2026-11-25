@@ -120,7 +120,7 @@ model TestDrivesBooking {
   carId           String
   car             Car           @relation(fields: [carId], references: [id])
   userId          String
-  user            User          @relation(fields: [userId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookingDate     DateTime      @db.Date
   startTime       String        // Format: "HH:MM" (24-hour)
   endTime         String        // Format: "HH:MM" (24-hour)

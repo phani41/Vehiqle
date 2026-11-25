@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/helper";
 import { CarIcon, Eye, Loader2, MoreHorizontal, Plus, Search, Star, StarOff, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const CarsList = () => {
@@ -28,8 +28,14 @@ const CarsList = () => {
     error: carsError,
   } = useFetch(getCars);
 
+  // Debounce search to prevent query-per-keystroke
+  const searchDebounceRef = useRef(null);
   useEffect(() => {
-    fetchCars(search);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      fetchCars(search);
+    }, 300);
+    return () => clearTimeout(searchDebounceRef.current);
   }, [search]);
 
   const {

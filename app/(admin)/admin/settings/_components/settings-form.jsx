@@ -11,6 +11,7 @@ import {
   UserX,
   CheckCircle,
   Search,
+  Trash2,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import {
   saveWorkingHours,
   getUsers,
   updateUserRole,
+  deleteUser,
 } from "@/actions/settings";
 
 // Day names for display
@@ -76,6 +78,8 @@ export const SettingsForm = () => {
   const [userToPromote, setUserToPromote] = useState(null);
   const [confirmRemoveDialog, setConfirmRemoveDialog] = useState(false);
   const [userToDemote, setUserToDemote] = useState(null);
+  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   // Custom hooks for API calls
   const {
@@ -105,6 +109,13 @@ export const SettingsForm = () => {
     data: updateRoleResult,
     error: updateRoleError,
   } = useFetch(updateUserRole);
+
+  const {
+    loading: deletingUser,
+    fn: deleteUserFn,
+    data: deleteUserResult,
+    error: deleteUserError,
+  } = useFetch(deleteUser);
 
   // Fetch settings and users on component mount
   useEffect(() => {
@@ -182,6 +193,21 @@ export const SettingsForm = () => {
     }
   }, [saveResult, updateRoleResult]);
 
+  useEffect(() => {
+    if (deleteUserResult?.success) {
+      toast.success(deleteUserResult.message || "User account and all details permanently deleted");
+      setConfirmDeleteDialog(false);
+      setUserToDelete(null);
+      fetchUsers();
+    }
+  }, [deleteUserResult]);
+
+  useEffect(() => {
+    if (deleteUserError) {
+      toast.error(deleteUserError.message || "Failed to delete user");
+    }
+  }, [deleteUserError]);
+
   // Handle working hours change
   const handleWorkingHourChange = (index, field, value) => {
     const updatedHours = [...workingHours];
@@ -207,6 +233,12 @@ export const SettingsForm = () => {
   const handleRemoveAdmin = async () => {
     if (!userToDemote) return;
     await updateRole(userToDemote.id, "USER");
+  };
+
+  // Permanently delete user and all their details
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    await deleteUserFn(userToDelete.id);
   };
 
   // Filter users by search term
@@ -401,34 +433,49 @@ export const SettingsForm = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            {user.role === "ADMIN" ? (
+                            <div className="flex items-center justify-end gap-2">
+                              {user.role === "ADMIN" ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-amber-600 hover:text-amber-700"
+                                  onClick={() => {
+                                    setUserToDemote(user);
+                                    setConfirmRemoveDialog(true);
+                                  }}
+                                  disabled={updatingRole || deletingUser}
+                                >
+                                  <UserX className="h-4 w-4 mr-2" />
+                                  Remove Admin
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setUserToPromote(user);
+                                    setConfirmAdminDialog(true);
+                                  }}
+                                  disabled={updatingRole || deletingUser}
+                                >
+                                  <Shield className="h-4 w-4 mr-2" />
+                                  Make Admin
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-600"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                                 onClick={() => {
-                                  setUserToDemote(user);
-                                  setConfirmRemoveDialog(true);
+                                  setUserToDelete(user);
+                                  setConfirmDeleteDialog(true);
                                 }}
-                                disabled={updatingRole}
+                                disabled={updatingRole || deletingUser}
                               >
-                                <UserX className="h-4 w-4 mr-2" />
-                                Remove Admin
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
                               </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setUserToPromote(user);
-                                  setConfirmAdminDialog(true);
-                                }}
-                                disabled={updatingRole}
-                              >
-                                <Shield className="h-4 w-4 mr-2" />
-                                Make Admin
-                              </Button>
-                            )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -524,6 +571,53 @@ export const SettingsForm = () => {
                     </>
                   ) : (
                     "Remove Admin"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Confirm Delete User Dialog */}
+          <Dialog
+            open={confirmDeleteDialog}
+            onOpenChange={setConfirmDeleteDialog}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="text-red-600 flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" />
+                  Delete User Account
+                </DialogTitle>
+                <DialogDescription className="space-y-2 pt-2">
+                  <p>
+                    Are you sure you want to permanently delete{" "}
+                    <strong>{userToDelete?.name || userToDelete?.email}</strong>?
+                  </p>
+                  <p className="text-red-600 font-medium">
+                    This action is irreversible. All details associated with this person (all test drive bookings, all saved cars, and the user profile) will be completely purged from both the database and Clerk.
+                  </p>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmDeleteDialog(false)}
+                  disabled={deletingUser}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteUser}
+                  disabled={deletingUser}
+                >
+                  {deletingUser ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Account & All Details"
                   )}
                 </Button>
               </DialogFooter>
